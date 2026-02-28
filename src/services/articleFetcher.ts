@@ -14,11 +14,13 @@ export interface FullArticle {
   readTimeMinutes: number
 }
 
-// Multiple CORS proxies for reliability
+// Multiple CORS proxies for reliability (ordered by reliability)
 const CORS_PROXIES = [
-  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
   (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`,
+  (url: string) => `https://cors-anywhere.herokuapp.com/${url}`,
 ]
 
 // Extract readable content from HTML
