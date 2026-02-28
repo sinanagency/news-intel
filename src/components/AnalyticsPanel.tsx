@@ -3,8 +3,8 @@ import { useStore } from '../store'
 import { behaviorAgent } from '../services/behaviorAgent'
 import { memoryAgent } from '../services/memoryAgent'
 import { trendService } from '../services/trends'
-import { Clock, BookmarkCheck, MessageSquare, Zap, Brain, BarChart3, TrendingUp, Sparkles } from 'lucide-react'
-import { subDays, startOfDay, isAfter } from 'date-fns'
+import { BookmarkCheck, MessageSquare, Brain, BarChart3, TrendingUp, Sparkles, Activity } from 'lucide-react'
+import { startOfDay, isAfter } from 'date-fns'
 
 export function AnalyticsPanel() {
   const { articles, messages } = useStore()
@@ -15,12 +15,10 @@ export function AnalyticsPanel() {
   // Calculate analytics
   const analytics = useMemo(() => {
     const now = new Date()
-    const last7Days = subDays(now, 7)
 
     // Articles stats
     const totalArticles = articles.length
     const savedArticles = articles.filter(a => a.saved).length
-    const recentArticles = articles.filter(a => isAfter(new Date(a.publishedAt), last7Days)).length
     const todayArticles = articles.filter(a => isAfter(new Date(a.publishedAt), startOfDay(now))).length
 
     // Engagement rate (saved / total)
@@ -54,20 +52,17 @@ export function AnalyticsPanel() {
     })
 
     // Conversations
-    const totalConversations = messages.length
     const userMessages = messages.filter(m => m.role === 'user').length
     const aiResponses = messages.filter(m => m.role === 'assistant').length
 
     return {
       totalArticles,
       savedArticles,
-      recentArticles,
       todayArticles,
       engagementRate,
       topCategories,
       topSources,
       hourlyActivity,
-      totalConversations,
       userMessages,
       aiResponses
     }
@@ -79,30 +74,36 @@ export function AnalyticsPanel() {
   const maxHourlyCount = Math.max(...analytics.hourlyActivity, 1)
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8 animate-in">
-      <div className="mb-8">
-        <h2 className="text-[20px] font-semibold text-[--gray-12] mb-1">Analytics</h2>
-        <p className="text-[13px] text-[--gray-9]">Your reading patterns and engagement metrics</p>
+    <div className="max-w-6xl mx-auto px-6 py-10 animate-in">
+      {/* Page Header */}
+      <div className="mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="icon-container-accent">
+            <BarChart3 className="w-5 h-5" />
+          </div>
+          <h2 className="text-[22px] font-semibold text-[--gray-white]">Analytics</h2>
+        </div>
+        <p className="text-[14px] text-[--gray-9] ml-[52px]">Your reading patterns and engagement metrics</p>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 stagger-in">
         <div className="metric-card">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-medium text-[--gray-9]">Total Articles</span>
-            <div className="w-8 h-8 rounded-lg bg-[--gray-4] flex items-center justify-center">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[12px] font-semibold text-[--gray-9] uppercase tracking-wide">Total Articles</span>
+            <div className="icon-container">
               <BarChart3 className="w-4 h-4 text-[--gray-11]" />
             </div>
           </div>
           <p className="metric-value">{analytics.totalArticles}</p>
-          <p className="metric-label">{analytics.todayArticles} today</p>
+          <p className="metric-label">{analytics.todayArticles} added today</p>
         </div>
 
         <div className="metric-card">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-medium text-[--gray-9]">Saved</span>
-            <div className="w-8 h-8 rounded-lg bg-[--accent-muted] flex items-center justify-center">
-              <BookmarkCheck className="w-4 h-4 text-[--accent]" />
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[12px] font-semibold text-[--gray-9] uppercase tracking-wide">Saved</span>
+            <div className="icon-container-accent">
+              <BookmarkCheck className="w-4 h-4" />
             </div>
           </div>
           <p className="metric-value">{analytics.savedArticles}</p>
@@ -112,10 +113,10 @@ export function AnalyticsPanel() {
         </div>
 
         <div className="metric-card">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-medium text-[--gray-9]">AI Conversations</span>
-            <div className="w-8 h-8 rounded-lg bg-[--success-muted] flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-[--success]" />
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[12px] font-semibold text-[--gray-9] uppercase tracking-wide">AI Chats</span>
+            <div className="icon-container-success">
+              <MessageSquare className="w-4 h-4" />
             </div>
           </div>
           <p className="metric-value">{analytics.userMessages}</p>
@@ -123,10 +124,10 @@ export function AnalyticsPanel() {
         </div>
 
         <div className="metric-card">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[12px] font-medium text-[--gray-9]">Memory Bank</span>
-            <div className="w-8 h-8 rounded-lg bg-[--warning-muted] flex items-center justify-center">
-              <Brain className="w-4 h-4 text-[--warning]" />
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[12px] font-semibold text-[--gray-9] uppercase tracking-wide">Memory</span>
+            <div className="icon-container-warning">
+              <Brain className="w-4 h-4" />
             </div>
           </div>
           <p className="metric-value">{memoryStatus.totalMemories}</p>
@@ -138,56 +139,62 @@ export function AnalyticsPanel() {
       {(trendAnalysis.trending.length > 0 || trendAnalysis.emerging.length > 0) && (
         <div className="grid md:grid-cols-2 gap-4 mb-8">
           {/* Trending Now */}
-          <div className="chart-container">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-[--success]" />
-              <h3 className="text-[14px] font-medium text-[--gray-12]">Trending Now</h3>
+          <div className="section-card">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-[--success-muted] flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-[--success]" />
+              </div>
+              <h3 className="text-[15px] font-semibold text-[--gray-white]">Trending Now</h3>
             </div>
             <div className="space-y-2">
               {trendAnalysis.trending.slice(0, 5).map((trend, i) => (
-                <div key={trend.id} className="flex items-center justify-between p-2 bg-[--gray-3] rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-medium text-[--gray-8] w-4">{i + 1}</span>
-                    <span className="text-[13px] text-[--gray-11]">{trend.keyword}</span>
+                <div key={trend.id} className="feature-row py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-md bg-[--gray-5] flex items-center justify-center text-[11px] font-bold text-[--gray-10]">
+                      {i + 1}
+                    </span>
+                    <span className="text-[13px] font-medium text-[--gray-12]">{trend.keyword}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <span className="text-[11px] text-[--gray-8]">{trend.articleCount} stories</span>
                     {trend.growth > 0 && (
-                      <span className="text-[10px] text-[--success] flex items-center gap-0.5">
-                        <TrendingUp className="w-3 h-3" />
-                        {trend.growth}%
+                      <span className="badge badge-green text-[10px]">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        +{trend.growth}%
                       </span>
                     )}
                   </div>
                 </div>
               ))}
               {trendAnalysis.trending.length === 0 && (
-                <p className="text-[12px] text-[--gray-8] text-center py-4">No trends detected yet</p>
+                <p className="text-[13px] text-[--gray-8] text-center py-6">No trends detected yet</p>
               )}
             </div>
           </div>
 
           {/* Emerging Topics */}
-          <div className="chart-container">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="w-4 h-4 text-[--warning]" />
-              <h3 className="text-[14px] font-medium text-[--gray-12]">Emerging Topics</h3>
+          <div className="section-card">
+            <div className="flex items-center gap-2 mb-5">
+              <div className="w-8 h-8 rounded-lg bg-[--warning-muted] flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-[--warning]" />
+              </div>
+              <h3 className="text-[15px] font-semibold text-[--gray-white]">Emerging Topics</h3>
             </div>
             <div className="space-y-2">
               {trendAnalysis.emerging.slice(0, 5).map((trend) => (
-                <div key={trend.id} className="flex items-center justify-between p-2 bg-[--gray-3] rounded-lg">
+                <div key={trend.id} className="feature-row py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] text-[--gray-11]">{trend.keyword}</span>
-                    <span className="badge badge-green text-[10px]">New</span>
+                    <span className="text-[13px] font-medium text-[--gray-12]">{trend.keyword}</span>
+                    <span className="badge badge-yellow text-[10px]">New</span>
                   </div>
-                  <span className="text-[11px] text-[--success] flex items-center gap-0.5">
-                    <TrendingUp className="w-3 h-3" />
+                  <span className="badge badge-green text-[10px]">
+                    <TrendingUp className="w-3 h-3 mr-1" />
                     +{trend.growth}%
                   </span>
                 </div>
               ))}
               {trendAnalysis.emerging.length === 0 && (
-                <p className="text-[12px] text-[--gray-8] text-center py-4">No emerging topics</p>
+                <p className="text-[13px] text-[--gray-8] text-center py-6">No emerging topics</p>
               )}
             </div>
           </div>
@@ -196,17 +203,17 @@ export function AnalyticsPanel() {
 
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Top Categories */}
-        <div className="chart-container">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[14px] font-medium text-[--gray-12]">Top Categories</h3>
-            <span className="text-[11px] text-[--gray-8]">{analytics.topCategories.length} topics</span>
+        <div className="section-card">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[15px] font-semibold text-[--gray-white]">Top Categories</h3>
+            <span className="badge">{analytics.topCategories.length} topics</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {analytics.topCategories.map(([category, count]) => (
               <div key={category}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[13px] text-[--gray-11]">{category}</span>
-                  <span className="text-[12px] text-[--gray-8]">{count}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-medium text-[--gray-11]">{category}</span>
+                  <span className="text-[12px] font-semibold text-[--gray-9]">{count}</span>
                 </div>
                 <div className="progress-bar">
                   <div
@@ -217,23 +224,23 @@ export function AnalyticsPanel() {
               </div>
             ))}
             {analytics.topCategories.length === 0 && (
-              <p className="text-[13px] text-[--gray-8] text-center py-4">No data yet</p>
+              <p className="text-[13px] text-[--gray-8] text-center py-6">No data yet</p>
             )}
           </div>
         </div>
 
         {/* Top Sources */}
-        <div className="chart-container">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[14px] font-medium text-[--gray-12]">News Sources</h3>
-            <span className="text-[11px] text-[--gray-8]">{analytics.topSources.length} sources</span>
+        <div className="section-card">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[15px] font-semibold text-[--gray-white]">News Sources</h3>
+            <span className="badge">{analytics.topSources.length} sources</span>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {analytics.topSources.map(([source, count]) => (
               <div key={source}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[13px] text-[--gray-11]">{source}</span>
-                  <span className="text-[12px] text-[--gray-8]">{count}</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-medium text-[--gray-11]">{source}</span>
+                  <span className="text-[12px] font-semibold text-[--gray-9]">{count}</span>
                 </div>
                 <div className="progress-bar">
                   <div
@@ -244,59 +251,62 @@ export function AnalyticsPanel() {
               </div>
             ))}
             {analytics.topSources.length === 0 && (
-              <p className="text-[13px] text-[--gray-8] text-center py-4">No data yet</p>
+              <p className="text-[13px] text-[--gray-8] text-center py-6">No data yet</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Hourly Activity */}
-      <div className="chart-container mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[14px] font-medium text-[--gray-12]">Publication Times</h3>
-          <span className="text-[11px] text-[--gray-8]">24 hour distribution</span>
+      <div className="section-card mb-8">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[15px] font-semibold text-[--gray-white]">Publication Times</h3>
+          <span className="badge">24h distribution</span>
         </div>
-        <div className="flex items-end gap-1 h-24">
+        <div className="flex items-end gap-1 h-28 px-2">
           {analytics.hourlyActivity.map((count, hour) => (
             <div
               key={hour}
-              className="flex-1 bg-[--accent] rounded-t opacity-80 hover:opacity-100 transition-opacity relative group"
+              className="flex-1 bg-gradient-to-t from-[--accent] to-[--accent-lighter] rounded-t-sm relative group cursor-pointer transition-all hover:opacity-100"
               style={{
                 height: `${Math.max((count / maxHourlyCount) * 100, 4)}%`,
-                minHeight: '4px'
+                minHeight: '4px',
+                opacity: count > 0 ? 0.7 + (count / maxHourlyCount) * 0.3 : 0.3
               }}
             >
-              <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 <div className="tooltip">
-                  {hour}:00 - {count}
+                  {hour}:00 · {count} articles
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex justify-between mt-2 text-[10px] text-[--gray-8]">
+        <div className="flex justify-between mt-3 px-2 text-[11px] text-[--gray-8]">
           <span>12am</span>
           <span>6am</span>
           <span>12pm</span>
           <span>6pm</span>
-          <span>12am</span>
+          <span>11pm</span>
         </div>
       </div>
 
       {/* Learning Summary */}
       <div className="grid md:grid-cols-2 gap-6">
         {/* Your Interests */}
-        <div className="chart-container">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap className="w-4 h-4 text-[--warning]" />
-            <h3 className="text-[14px] font-medium text-[--gray-12]">Learned Interests</h3>
+        <div className="section-card">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-[--accent-muted] flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-[--accent-lighter]" />
+            </div>
+            <h3 className="text-[15px] font-semibold text-[--gray-white]">Learned Interests</h3>
           </div>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {preferences.topCategories.slice(0, 12).map((cat, i) => (
               <span
                 key={cat.category}
-                className="px-2.5 py-1 text-[12px] bg-[--gray-4] text-[--gray-11] rounded-md"
-                style={{ opacity: 1 - (i * 0.06) }}
+                className="tag tag-accent"
+                style={{ opacity: 1 - (i * 0.05) }}
               >
                 {cat.category}
               </span>
@@ -308,33 +318,35 @@ export function AnalyticsPanel() {
         </div>
 
         {/* Reading Pattern */}
-        <div className="chart-container">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-4 h-4 text-[--accent]" />
-            <h3 className="text-[14px] font-medium text-[--gray-12]">Reading Patterns</h3>
-          </div>
-          <div className="space-y-3 text-[13px] text-[--gray-10]">
-            <div className="flex justify-between">
-              <span>Total articles read</span>
-              <span className="text-[--gray-12] font-medium">{preferences.readingPatterns.totalArticlesRead}</span>
+        <div className="section-card">
+          <div className="flex items-center gap-2 mb-5">
+            <div className="w-8 h-8 rounded-lg bg-[--success-muted] flex items-center justify-center">
+              <Activity className="w-4 h-4 text-[--success]" />
             </div>
-            <div className="flex justify-between">
-              <span>Avg reading time</span>
-              <span className="text-[--gray-12] font-medium">
+            <h3 className="text-[15px] font-semibold text-[--gray-white]">Reading Patterns</h3>
+          </div>
+          <div className="space-y-4">
+            <div className="feature-row py-3">
+              <span className="text-[13px] text-[--gray-10]">Total articles read</span>
+              <span className="text-[14px] font-semibold text-[--gray-white]">{preferences.readingPatterns.totalArticlesRead}</span>
+            </div>
+            <div className="feature-row py-3">
+              <span className="text-[13px] text-[--gray-10]">Avg reading time</span>
+              <span className="text-[14px] font-semibold text-[--gray-white]">
                 {preferences.readingPatterns.avgReadTimeMs > 0
                   ? `${Math.round(preferences.readingPatterns.avgReadTimeMs / 60000)} min`
                   : 'N/A'}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span>Preferred time</span>
-              <span className="text-[--gray-12] font-medium capitalize">
+            <div className="feature-row py-3">
+              <span className="text-[13px] text-[--gray-10]">Preferred time</span>
+              <span className="text-[14px] font-semibold text-[--gray-white] capitalize">
                 {preferences.readingPatterns.preferredTimeOfDay || 'N/A'}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span>Actions tracked</span>
-              <span className="text-[--gray-12] font-medium">{behaviorAgent.getStatus().actionsTracked}</span>
+            <div className="feature-row py-3">
+              <span className="text-[13px] text-[--gray-10]">Actions tracked</span>
+              <span className="text-[14px] font-semibold text-[--gray-white]">{behaviorAgent.getStatus().actionsTracked}</span>
             </div>
           </div>
         </div>

@@ -22,19 +22,25 @@ export function Header({ onRefresh, onOpenBriefing }: HeaderProps) {
     <header className="sticky top-0 z-40 glass border-b border-[--border-subtle]">
       <div className="max-w-6xl mx-auto px-6">
         {/* Top row */}
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[--gray-12] flex items-center justify-center">
-              <Newspaper className="w-4 h-4 text-[--gray-1]" />
+            <div className="logo-mark">
+              <Newspaper className="w-4 h-4" />
             </div>
-            <span className="text-[15px] font-semibold text-[--gray-12]">NewsIntel</span>
+            <div>
+              <span className="text-[15px] font-semibold text-[--gray-white] tracking-tight">NewsIntel</span>
+              <span className="hidden sm:inline-block ml-2 text-[11px] font-medium text-[--gray-8] bg-[--gray-4] px-1.5 py-0.5 rounded">
+                BETA
+              </span>
+            </div>
           </div>
 
           {/* Right side */}
           <div className="flex items-center gap-3">
             {lastFetchTime && (
-              <span className="hidden sm:block text-xs text-[--gray-9]">
+              <span className="hidden md:flex items-center gap-1.5 text-[12px] text-[--gray-9]">
+                <span className="status-dot active"></span>
                 Updated {formatDistanceToNow(new Date(lastFetchTime), { addSuffix: true })}
               </span>
             )}
@@ -42,10 +48,10 @@ export function Header({ onRefresh, onOpenBriefing }: HeaderProps) {
             {onOpenBriefing && articles.length > 0 && (
               <button
                 onClick={onOpenBriefing}
-                className="btn btn-secondary h-8 px-3 text-[13px]"
+                className="btn btn-secondary h-9 px-3.5 text-[13px] gap-2"
                 title="Daily Briefing"
               >
-                <Headphones className="w-3.5 h-3.5" />
+                <Headphones className="w-4 h-4" />
                 <span className="hidden sm:inline">Briefing</span>
               </button>
             )}
@@ -53,35 +59,35 @@ export function Header({ onRefresh, onOpenBriefing }: HeaderProps) {
             <button
               onClick={onRefresh}
               disabled={isFetching}
-              className="btn btn-secondary h-8 px-3 text-[13px]"
+              className="btn btn-accent h-9 px-4 text-[13px] gap-2"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">{isFetching ? 'Fetching...' : 'Refresh'}</span>
             </button>
           </div>
         </div>
 
         {/* Tabs */}
-        <nav className="flex gap-1 -mb-px">
+        <nav className="flex gap-1 -mb-px overflow-x-auto scrollbar-none">
           {tabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium transition-colors ${
+              className={`relative flex items-center gap-2 px-4 py-3 text-[13px] font-medium transition-all whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'text-[--gray-12]'
-                  : 'text-[--gray-9] hover:text-[--gray-11]'
+                  ? 'text-[--gray-white]'
+                  : 'text-[--gray-9] hover:text-[--gray-11] hover:bg-[--gray-4]/50'
               }`}
             >
-              <tab.icon className="w-4 h-4" />
+              <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-[--accent-lighter]' : ''}`} />
               <span>{tab.label}</span>
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`px-1.5 py-0.5 text-[11px] font-medium rounded ${
+                <span className={`px-1.5 py-0.5 text-[11px] font-semibold rounded-md transition-all ${
                   activeTab === tab.id
-                    ? 'bg-[--gray-12] text-[--gray-1]'
+                    ? 'bg-[--accent-muted] text-[--accent-lighter]'
                     : 'bg-[--gray-5] text-[--gray-10]'
                 }`}>
-                  {tab.count}
+                  {tab.count > 99 ? '99+' : tab.count}
                 </span>
               )}
               {activeTab === tab.id && (

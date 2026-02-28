@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, ExternalLink, MessageSquare, Clock } from 'lucide-react'
+import { Bookmark, BookmarkCheck, ExternalLink, MessageSquare, Clock, TrendingUp } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Article } from '../types'
 import { useStore } from '../store'
@@ -37,23 +37,24 @@ export function ArticleCard({ article, onAskAbout, onReadMore, compact = false }
     onReadMore?.(article)
   }
 
-  // Relevance indicator - clean, no glow
-  const relevanceColor = article.relevanceScore > 0.7
-    ? 'bg-[--success]'
-    : article.relevanceScore > 0.4
-    ? 'bg-[--warning]'
-    : 'bg-[--gray-7]'
+  // Relevance indicator with glow
+  const isHighRelevance = article.relevanceScore > 0.7
+  const isMedRelevance = article.relevanceScore > 0.4
 
   if (compact) {
     return (
       <article
         onClick={handleClick}
-        className="card card-interactive p-4 cursor-pointer group animate-slide-up"
+        className="card card-interactive p-4 cursor-pointer group"
       >
         <div className="flex items-start gap-3">
-          <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${relevanceColor}`} />
+          <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
+            isHighRelevance ? 'bg-[--success] shadow-[0_0_8px_var(--success-glow)]' :
+            isMedRelevance ? 'bg-[--warning] shadow-[0_0_8px_var(--warning-glow)]' :
+            'bg-[--gray-7]'
+          }`} />
           <div className="flex-1 min-w-0">
-            <h4 className="text-[13px] font-medium text-[--gray-12] line-clamp-2 group-hover:text-[--gray-11] transition-colors">
+            <h4 className="text-[13px] font-medium text-[--gray-12] line-clamp-2 group-hover:text-[--accent-lighter] transition-colors">
               {article.title}
             </h4>
             <div className="flex items-center gap-2 mt-1.5">
@@ -71,12 +72,12 @@ export function ArticleCard({ article, onAskAbout, onReadMore, compact = false }
   return (
     <article
       onClick={handleClick}
-      className="card card-interactive p-5 cursor-pointer group animate-slide-up"
+      className="card card-interactive card-glow p-5 cursor-pointer group"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-3">
         <div className="flex items-center gap-2">
-          <span className="badge">
+          <span className="badge badge-blue">
             {article.source}
           </span>
           <span className="flex items-center gap-1.5 text-[11px] text-[--gray-8]">
@@ -84,14 +85,18 @@ export function ArticleCard({ article, onAskAbout, onReadMore, compact = false }
             {formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true })}
           </span>
         </div>
-        <div
-          className={`w-2 h-2 rounded-full ${relevanceColor}`}
-          title={`${Math.round(article.relevanceScore * 100)}% match`}
-        />
+        {isHighRelevance && (
+          <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-[--success-subtle] border border-[--success-subtle]">
+            <TrendingUp className="w-3 h-3 text-[--success]" />
+            <span className="text-[10px] font-semibold text-[--success]">
+              {Math.round(article.relevanceScore * 100)}%
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Title */}
-      <h3 className="text-[15px] font-semibold text-[--gray-12] leading-snug mb-2 group-hover:text-[--gray-11] transition-colors">
+      <h3 className="text-[15px] font-semibold text-[--gray-white] leading-snug mb-2 group-hover:text-[--accent-lighter] transition-colors">
         {article.title}
       </h3>
 
@@ -102,19 +107,19 @@ export function ArticleCard({ article, onAskAbout, onReadMore, compact = false }
 
       {/* Key Points Preview */}
       {article.keyPoints.length > 0 && (
-        <div className="mb-3 p-3 bg-[--gray-3] rounded-lg border border-[--border-subtle]">
-          <p className="text-[12px] text-[--gray-10] line-clamp-2">
+        <div className="mb-3 p-3 bg-gradient-to-br from-[--gray-3] to-[--gray-4]/50 rounded-lg border border-[--border-subtle]">
+          <p className="text-[12px] text-[--gray-10] line-clamp-2 leading-relaxed">
             {article.keyPoints[0]}
           </p>
         </div>
       )}
 
       {/* Categories */}
-      <div className="flex flex-wrap gap-1.5 mb-3">
+      <div className="flex flex-wrap gap-1.5 mb-4">
         {article.categories.slice(0, 3).map((cat, i) => (
           <span
             key={i}
-            className="px-2 py-0.5 text-[11px] font-medium bg-[--gray-4] text-[--gray-9] rounded"
+            className="tag"
           >
             {cat}
           </span>
@@ -122,32 +127,32 @@ export function ArticleCard({ article, onAskAbout, onReadMore, compact = false }
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 pt-3 border-t border-[--border-subtle]">
+      <div className="flex items-center gap-1.5 pt-4 border-t border-[--border-subtle]">
         <button
           onClick={toggleSaved}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium rounded-lg transition-all ${
             article.saved
-              ? 'text-[--accent] bg-[--accent-muted]'
-              : 'text-[--gray-9] hover:text-[--gray-11] hover:bg-[--gray-4]'
+              ? 'text-[--accent-lighter] bg-[--accent-muted] shadow-[0_0_12px_var(--accent-subtle)]'
+              : 'text-[--gray-10] hover:text-[--gray-12] hover:bg-[--gray-4]'
           }`}
         >
-          {article.saved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+          {article.saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
           {article.saved ? 'Saved' : 'Save'}
         </button>
 
         <button
           onClick={handleAsk}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-[--gray-9] hover:text-[--gray-11] hover:bg-[--gray-4] rounded-md transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-[--gray-10] hover:text-[--gray-12] hover:bg-[--gray-4] rounded-lg transition-all"
         >
-          <MessageSquare className="w-3.5 h-3.5" />
+          <MessageSquare className="w-4 h-4" />
           Ask AI
         </button>
 
         <button
           onClick={openExternal}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-[--gray-9] hover:text-[--gray-11] hover:bg-[--gray-4] rounded-md transition-colors ml-auto"
+          className="flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium text-[--gray-10] hover:text-[--gray-12] hover:bg-[--gray-4] rounded-lg transition-all ml-auto"
         >
-          <ExternalLink className="w-3.5 h-3.5" />
+          <ExternalLink className="w-4 h-4" />
           Source
         </button>
       </div>
