@@ -63,7 +63,7 @@ export const useStore = create<AppState>()(
 
       // Settings
       settings: {
-        groqApiKey: '',
+        groqApiKey: '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',
         openaiApiKey: '',
         interests: [
           'AI',
