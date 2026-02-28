@@ -1,5 +1,6 @@
 import type { Article, FetchResult } from '../types'
 import { memoryAgent } from './memoryAgent'
+import { searchWeb, isSearchQuery, extractSearchTopic, type SearchResult } from './webSearch'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
 
@@ -144,7 +145,7 @@ export async function summarizeArticles(
   return results
 }
 
-// Chat with context from articles AND memory
+// Chat with context from articles AND memory, with real-time web search
 export async function chatWithContext(
   userMessage: string,
   articles: Article[],
@@ -155,21 +156,50 @@ export async function chatWithContext(
   const memoryContext = memoryAgent.buildContextString(userMessage)
   const userProfile = memoryAgent.getProfile()
 
+  // Check if this looks like a search query for a specific topic
+  let webSearchResults: SearchResult[] = []
+  let searchTopic = ''
+
+  if (isSearchQuery(userMessage)) {
+    searchTopic = extractSearchTopic(userMessage)
+    if (searchTopic.length >= 3) {
+      try {
+        webSearchResults = await searchWeb(searchTopic)
+      } catch (error) {
+        console.error('Web search failed:', error)
+      }
+    }
+  }
+
+  // Build context from web search results (if any)
+  const webSearchContext = webSearchResults.length > 0
+    ? `\n\nWEB SEARCH RESULTS for "${searchTopic}":\n${webSearchResults.map((r, i) =>
+        `${i + 1}. ${r.title} (${r.source})\n   ${r.snippet}\n   URL: ${r.url}`
+      ).join('\n\n')}`
+    : ''
+
   // Build context from recent/relevant articles
   const topArticles = articles
     .slice(0, 10)
     .map(a => `- ${a.title} (${a.source}): ${a.summary}`)
     .join('\n')
 
-  const systemPrompt = `You are an AI news analyst assistant for a tech founder/agency owner.
+  const systemPrompt = `You are an AI news analyst assistant. You have access to real-time web search and pre-loaded news feeds.
 
 User interests: ${userProfile.interests.join(', ') || 'AI, startups, technology'}
 
-Today's news context:
+PRE-LOADED NEWS:
 ${topArticles}
+${webSearchContext}
 ${memoryContext}
 
-Help the user understand the news, draw insights, and identify opportunities. Be concise but insightful. Reference specific articles when relevant. Remember previous conversations.`
+INSTRUCTIONS:
+- If web search results are provided, USE THEM to answer the user's question
+- Summarize the key news findings from the search results
+- Include relevant URLs so the user can read more
+- Suggest 2-3 related topics they might want to explore
+- If no relevant results found, be honest and suggest alternative search terms
+- Be concise but thorough. Reference specific sources.`
 
   const messages: GroqMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -177,7 +207,7 @@ Help the user understand the news, draw insights, and identify opportunities. Be
     { role: 'user', content: userMessage }
   ]
 
-  const response = await callGroq(messages, apiKey, 1000)
+  const response = await callGroq(messages, apiKey, 1500)
 
   // Store conversation in memory agent
   memoryAgent.storeConversation(userMessage, response)
