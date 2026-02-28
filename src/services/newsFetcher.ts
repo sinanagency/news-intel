@@ -1,5 +1,12 @@
 import type { FetchResult } from '../types'
 
+// Multiple CORS proxies for reliability (ordered by reliability)
+const CORS_PROXIES = [
+  (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+]
+
 // RSS feed sources
 const RSS_FEEDS = [
   { url: 'https://hnrss.org/frontpage', source: 'Hacker News' },
@@ -70,25 +77,31 @@ async function fetchHackerNews(): Promise<FetchResult[]> {
   }
 }
 
-// Fetch a single RSS feed
+// Fetch a single RSS feed with proxy fallback
 async function fetchRSSFeed(feedUrl: string, source: string): Promise<FetchResult[]> {
-  try {
-    // Use a CORS proxy for RSS feeds
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`
-    const response = await fetch(proxyUrl, {
-      headers: { 'Accept': 'application/rss+xml, application/xml, text/xml' }
-    })
+  for (const getProxy of CORS_PROXIES) {
+    try {
+      const proxyUrl = getProxy(feedUrl)
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000)
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+      const response = await fetch(proxyUrl, {
+        headers: { 'Accept': 'application/rss+xml, application/xml, text/xml' },
+        signal: controller.signal
+      })
+      clearTimeout(timeout)
+
+      if (!response.ok) continue
+
+      const xml = await response.text()
+      const items = parseRSS(xml, source)
+      if (items.length > 0) return items
+    } catch {
+      continue
     }
-
-    const xml = await response.text()
-    return parseRSS(xml, source)
-  } catch (error) {
-    console.error(`Failed to fetch ${source}:`, error)
-    return []
   }
+  console.warn(`All proxies failed for ${source}`)
+  return []
 }
 
 // Main fetch function
