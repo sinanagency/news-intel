@@ -101,12 +101,26 @@ export const useStore = create<AppState>()(
     }),
     {
       name: 'news-intel-storage',
+      version: 1,
       partialize: (state) => ({
         articles: state.articles,
         messages: state.messages,
         settings: state.settings,
         lastFetchTime: state.lastFetchTime,
       }),
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Partial<AppState>
+        // Migrate from v0: reset old API keys to USE_BACKEND
+        if (version === 0 && state.settings) {
+          if (state.settings.groqApiKey?.startsWith('gsk_')) {
+            state.settings.groqApiKey = 'USE_BACKEND'
+          }
+          if (state.settings.openaiApiKey?.startsWith('sk-') || state.settings.openaiApiKey === '') {
+            state.settings.openaiApiKey = 'USE_BACKEND'
+          }
+        }
+        return state as AppState
+      },
     }
   )
 )
