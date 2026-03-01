@@ -25,7 +25,7 @@ function App() {
 
   // Initialize agents and OpenAI on mount
   useEffect(() => {
-    // Initialize OpenAI if key exists
+    // Initialize OpenAI with key or backend mode
     if (settings.openaiApiKey) {
       openaiService.setApiKey(settings.openaiApiKey)
     }
@@ -41,7 +41,8 @@ function App() {
 
   // Fetch and process news
   const handleRefresh = useCallback(async () => {
-    if (!settings.groqApiKey) {
+    // Backend mode uses server-side keys, so no client key needed
+    if (!settings.groqApiKey && settings.groqApiKey !== 'USE_BACKEND') {
       alert('Please set your Groq API key in Settings first.')
       setActiveTab('settings')
       return

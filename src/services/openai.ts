@@ -21,16 +21,43 @@ export interface DeepAnalysis {
 
 const EMBEDDING_MODEL = 'text-embedding-3-small'
 const ANALYSIS_MODEL = 'gpt-4o'
+const BACKEND_OPENAI_URL = '/api/openai'
 
 class OpenAIService {
   private apiKey: string | null = null
+  private useBackend: boolean = false
 
   setApiKey(key: string): void {
-    this.apiKey = key
+    if (key === 'USE_BACKEND') {
+      this.useBackend = true
+      this.apiKey = null
+    } else {
+      this.apiKey = key
+      this.useBackend = false
+    }
   }
 
   hasApiKey(): boolean {
-    return !!this.apiKey && this.apiKey.startsWith('sk-')
+    return this.useBackend || (!!this.apiKey && this.apiKey.startsWith('sk-'))
+  }
+
+  private async callOpenAI(endpoint: string, body: Record<string, unknown>): Promise<Response> {
+    if (this.useBackend) {
+      return fetch(BACKEND_OPENAI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint, ...body })
+      })
+    }
+
+    return fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    })
   }
 
   // Generate embedding for text
@@ -38,16 +65,9 @@ class OpenAIService {
     if (!this.hasApiKey()) return null
 
     try {
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: EMBEDDING_MODEL,
-          input: text.slice(0, 8000) // Limit input size
-        })
+      const response = await this.callOpenAI('https://api.openai.com/v1/embeddings', {
+        model: EMBEDDING_MODEL,
+        input: text.slice(0, 8000) // Limit input size
       })
 
       if (!response.ok) {
@@ -69,16 +89,9 @@ class OpenAIService {
     if (!this.hasApiKey()) return texts.map(() => null)
 
     try {
-      const response = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: EMBEDDING_MODEL,
-          input: texts.map(t => t.slice(0, 8000))
-        })
+      const response = await this.callOpenAI('https://api.openai.com/v1/embeddings', {
+        model: EMBEDDING_MODEL,
+        input: texts.map(t => t.slice(0, 8000))
       })
 
       if (!response.ok) {
@@ -135,22 +148,16 @@ class OpenAIService {
     if (!this.hasApiKey()) return null
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: ANALYSIS_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: `You are a strategic analyst helping a business-focused user understand news and identify opportunities. Be specific and actionable. Return JSON only.`
-            },
-            {
-              role: 'user',
-              content: `Analyze this article for business implications:
+      const response = await this.callOpenAI('https://api.openai.com/v1/chat/completions', {
+        model: ANALYSIS_MODEL,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a strategic analyst helping a business-focused user understand news and identify opportunities. Be specific and actionable. Return JSON only.`
+          },
+          {
+            role: 'user',
+            content: `Analyze this article for business implications:
 
 Title: ${articleTitle}
 Summary: ${articleSummary}
@@ -166,11 +173,10 @@ Return a JSON object with:
   "actionItems": ["specific action 1", "specific action 2"],
   "relatedTopics": ["topic to research 1", "topic 2"]
 }`
-            }
-          ],
-          temperature: 0.7,
-          response_format: { type: 'json_object' }
-        })
+          }
+        ],
+        temperature: 0.7,
+        response_format: { type: 'json_object' }
       })
 
       if (!response.ok) {
@@ -196,33 +202,26 @@ Return a JSON object with:
     if (!this.hasApiKey()) return []
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini', // Cheaper for this task
-          messages: [
-            {
-              role: 'system',
-              content: 'Generate insightful questions a business-minded user would want to ask about these articles. Return JSON array of 4 questions.'
-            },
-            {
-              role: 'user',
-              content: `Articles:
+      const response = await this.callOpenAI('https://api.openai.com/v1/chat/completions', {
+        model: 'gpt-4o-mini', // Cheaper for this task
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate insightful questions a business-minded user would want to ask about these articles. Return JSON array of 4 questions.'
+          },
+          {
+            role: 'user',
+            content: `Articles:
 ${articles.slice(0, 5).map(a => `- ${a.title}: ${a.summary}`).join('\n')}
 
 User interests: ${userInterests.join(', ')}
 Recent questions (avoid similar): ${recentQuestions.slice(0, 3).join('; ')}
 
 Return: { "questions": ["q1", "q2", "q3", "q4"] }`
-            }
-          ],
-          temperature: 0.8,
-          response_format: { type: 'json_object' }
-        })
+          }
+        ],
+        temperature: 0.8,
+        response_format: { type: 'json_object' }
       })
 
       if (!response.ok) return []
@@ -233,6 +232,11 @@ Return: { "questions": ["q1", "q2", "q3", "q4"] }`
     } catch {
       return []
     }
+  }
+
+  // Enable backend mode for deployment
+  enableBackendMode(): void {
+    this.useBackend = true
   }
 }
 

@@ -3,6 +3,7 @@ import { memoryAgent } from './memoryAgent'
 import { searchWeb, isSearchQuery, extractSearchTopic, type SearchResult } from './webSearch'
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions'
+const BACKEND_GROQ_URL = '/api/groq'
 
 interface GroqMessage {
   role: 'system' | 'user' | 'assistant'
@@ -22,12 +23,20 @@ async function callGroq(
   apiKey: string,
   maxTokens: number = 1000
 ): Promise<string> {
-  const response = await fetch(GROQ_API_URL, {
+  const useBackend = !apiKey || apiKey === 'USE_BACKEND'
+  const url = useBackend ? BACKEND_GROQ_URL : GROQ_API_URL
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (!useBackend) {
+    headers['Authorization'] = `Bearer ${apiKey}`
+  }
+
+  const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
       messages,
