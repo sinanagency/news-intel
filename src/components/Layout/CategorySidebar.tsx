@@ -1,6 +1,6 @@
-import { Search, Home, Cpu, Rocket, Building2, Globe2, TrendingUp, Headphones, RefreshCw } from 'lucide-react'
+import { Home, Cpu, Rocket, Building2, Globe2, TrendingUp, Headphones, RefreshCw } from 'lucide-react'
 import { useStore } from '../../store'
-import { useState } from 'react'
+import { AskBar } from '../AskBar'
 
 interface CategorySidebarProps {
   onRefresh: () => void
@@ -9,26 +9,13 @@ interface CategorySidebarProps {
 
 export function CategorySidebar({ onRefresh, onOpenBriefing }: CategorySidebarProps) {
   const { activeTab, setActiveTab, articles, isFetching, settings } = useStore()
-  const [searchQuery, setSearchQuery] = useState('')
 
   const feedCount = articles.filter(a => !a.saved).length
 
   return (
     <div className="category-sidebar">
-      {/* Header with search */}
-      <div className="sidebar-header">
-        <div className="sidebar-title">Explore</div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[--gray-7]" />
-          <input
-            type="text"
-            placeholder="Search"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="sidebar-search pl-9"
-          />
-        </div>
-      </div>
+      {/* Ask Bar - Master input */}
+      <AskBar />
 
       {/* Navigation */}
       <nav className="sidebar-nav">
