@@ -46,7 +46,7 @@ export function SettingsPanel() {
         const memoryCount = await memoryAgent.embedAllMemories()
         const articleCount = await behaviorAgent.embedAllInteractions(articles)
         setEmbeddingStatus(`Embedded ${memoryCount} memories and ${articleCount} articles`)
-      } catch (error) {
+      } catch (_error) {
         setEmbeddingStatus('Failed to embed existing data')
       }
 

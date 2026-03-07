@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useState } from 'react'
-import { Header, ArticleList, ArticleReader, ChatPanel, SettingsPanel, AnalyticsPanel, DailyBriefing } from './components'
+import { IconRail, CategorySidebar, RightPanel, MainContent } from './components/Layout'
+import { ArticleReader, ChatPanel, SettingsPanel, AnalyticsPanel, DailyBriefing } from './components'
 import { useStore } from './store'
 import { fetchAllNews, filterByInterests } from './services/newsFetcher'
 import { summarizeArticles, chatWithContext } from './services/groq'
@@ -25,7 +26,6 @@ function App() {
 
   // Initialize agents and OpenAI on mount
   useEffect(() => {
-    // Initialize OpenAI with key or backend mode
     if (settings.openaiApiKey) {
       openaiService.setApiKey(settings.openaiApiKey)
     }
@@ -41,7 +41,6 @@ function App() {
 
   // Fetch and process news
   const handleRefresh = useCallback(async () => {
-    // Backend mode uses server-side keys, so no client key needed
     if (!settings.groqApiKey && settings.groqApiKey !== 'USE_BACKEND') {
       alert('Please set your Groq API key in Settings first.')
       setActiveTab('settings')
@@ -51,11 +50,9 @@ function App() {
     setIsFetching(true)
 
     try {
-      // Fetch raw news
       const rawNews = await fetchAllNews()
       console.log(`Fetched ${rawNews.length} articles`)
 
-      // Filter by interests
       const filtered = filterByInterests(
         rawNews,
         settings.interests,
@@ -63,17 +60,14 @@ function App() {
       )
       console.log(`Filtered to ${filtered.length} articles`)
 
-      // Limit to max articles
       const limited = filtered.slice(0, settings.maxArticlesPerFetch)
 
-      // Summarize with AI
       const processed = await summarizeArticles(
         limited,
         settings.groqApiKey,
         settings.interests
       )
 
-      // Add to store
       addArticles(processed)
       setLastFetchTime(new Date().toISOString())
 
@@ -88,14 +82,12 @@ function App() {
 
   // Handle "Ask about this" from article card
   const handleAskAbout = useCallback(async (article: Article) => {
-    setSelectedArticle(null) // Close reader if open
+    setSelectedArticle(null)
     setActiveTab('chat')
 
-    // Track the ask action
     behaviorAgent.trackAction(article, 'ask')
     memoryAgent.storeArticleInteraction(article, 'asked')
 
-    // Add user message
     addMessage({
       id: crypto.randomUUID(),
       role: 'user',
@@ -104,7 +96,6 @@ function App() {
       createdAt: new Date().toISOString()
     })
 
-    // Get AI response
     try {
       const response = await chatWithContext(
         `Analyze this article in detail: "${article.title}". Summary: ${article.summary}. What are the key implications? What opportunities does this create?`,
@@ -120,7 +111,6 @@ function App() {
         createdAt: new Date().toISOString()
       })
 
-      // Store the conversation in memory
       memoryAgent.storeConversation(
         `Tell me more about: ${article.title}`,
         response,
@@ -159,21 +149,48 @@ function App() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-screen">
-      <Header onRefresh={handleRefresh} onOpenBriefing={() => setShowBriefing(true)} />
+    <div className="app-layout">
+      {/* Left: Icon Rail */}
+      <IconRail />
 
-      <main>
-        {(activeTab === 'today' || activeTab === 'saved') && (
-          <ArticleList
-            onAskAbout={handleAskAbout}
-            onRefresh={handleRefresh}
-            onReadMore={handleReadMore}
-          />
-        )}
-        {activeTab === 'analytics' && <AnalyticsPanel />}
-        {activeTab === 'chat' && <ChatPanel />}
-        {activeTab === 'settings' && <SettingsPanel />}
-      </main>
+      {/* Left: Category Sidebar */}
+      <CategorySidebar
+        onRefresh={handleRefresh}
+        onOpenBriefing={() => setShowBriefing(true)}
+      />
+
+      {/* Center: Main Content */}
+      {(activeTab === 'today' || activeTab === 'saved') && (
+        <MainContent
+          onAskAbout={handleAskAbout}
+          onRefresh={handleRefresh}
+          onReadMore={handleReadMore}
+        />
+      )}
+      {activeTab === 'analytics' && (
+        <div className="main-content">
+          <div className="main-content-inner">
+            <AnalyticsPanel />
+          </div>
+        </div>
+      )}
+      {activeTab === 'chat' && (
+        <div className="main-content">
+          <div className="main-content-inner">
+            <ChatPanel />
+          </div>
+        </div>
+      )}
+      {activeTab === 'settings' && (
+        <div className="main-content">
+          <div className="main-content-inner">
+            <SettingsPanel />
+          </div>
+        </div>
+      )}
+
+      {/* Right: Side Panel */}
+      <RightPanel />
 
       {/* Article Reader Panel */}
       <ArticleReader
