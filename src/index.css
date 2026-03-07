@@ -166,6 +166,7 @@ body {
 /* Icon Rail - Left edge */
 .icon-rail {
   width: var(--sidebar-icon-width);
+  min-width: var(--sidebar-icon-width);
   height: 100vh;
   background: var(--gray-2);
   border-right: 1px solid var(--border-subtle);
@@ -174,6 +175,8 @@ body {
   align-items: center;
   padding: 12px 0;
   flex-shrink: 0;
+  overflow: visible;
+  z-index: 10;
 }
 
 .icon-rail-item {
@@ -204,7 +207,7 @@ body {
 .icon-rail-item.active::before {
   content: '';
   position: absolute;
-  left: -12px;
+  left: -24px;
   width: 4px;
   height: 24px;
   background: var(--gray-white);
@@ -416,7 +419,8 @@ body {
 
 /* Main Content Area */
 .main-content {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
   height: 100vh;
   overflow-y: auto;
   background: linear-gradient(
@@ -431,9 +435,10 @@ body {
 }
 
 .main-content-inner {
-  max-width: 1000px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 24px 40px;
 }
 
 /* Right Panel */
@@ -802,9 +807,6 @@ body {
   gap: 16px;
   overflow-x: auto;
   padding-bottom: 8px;
-  margin: 0 -32px;
-  padding-left: 32px;
-  padding-right: 32px;
   scrollbar-width: none;
 }
 
@@ -1283,16 +1285,11 @@ body {
 @media (max-width: 640px) {
   .icon-rail {
     width: 60px;
+    min-width: 60px;
   }
 
   .feature-cards-grid {
     grid-template-columns: 1fr;
-  }
-
-  .horizontal-scroll {
-    margin: 0 -20px;
-    padding-left: 20px;
-    padding-right: 20px;
   }
 
   .article-card {
