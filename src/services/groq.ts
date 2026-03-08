@@ -109,49 +109,96 @@ Respond with valid JSON only (no markdown, no code blocks):
   }
 }
 
-// Batch summarize articles
+// Batch summarize articles with fallback
 export async function summarizeArticles(
   articles: FetchResult[],
   apiKey: string,
   interests: string[]
 ): Promise<Article[]> {
+  console.log(`Summarizing ${articles.length} articles...`)
   const results: Article[] = []
 
+  // Process in batches of 5
   for (let i = 0; i < articles.length; i += 5) {
     const batch = articles.slice(i, i + 5)
+    console.log(`Processing batch ${Math.floor(i / 5) + 1}/${Math.ceil(articles.length / 5)}`)
 
     const batchResults = await Promise.all(
       batch.map(async (article) => {
-        const summary = await summarizeArticle(article, apiKey, interests)
         const now = new Date().toISOString()
 
-        return {
-          id: crypto.randomUUID(),
-          title: article.title,
-          source: article.source,
-          url: article.link,
-          content: article.content || '',
-          summary: summary.summary,
-          keyPoints: summary.keyPoints,
-          categories: summary.categories,
-          relevanceScore: summary.relevanceScore,
-          autoQuestions: summary.autoQuestions,
-          publishedAt: article.pubDate || now,
-          createdAt: now,
-          saved: false
+        try {
+          const summary = await summarizeArticle(article, apiKey, interests)
+          return {
+            id: crypto.randomUUID(),
+            title: article.title,
+            source: article.source,
+            url: article.link,
+            content: article.content || '',
+            summary: summary.summary,
+            keyPoints: summary.keyPoints,
+            categories: summary.categories,
+            relevanceScore: summary.relevanceScore,
+            autoQuestions: summary.autoQuestions,
+            publishedAt: article.pubDate || now,
+            createdAt: now,
+            saved: false
+          }
+        } catch (error) {
+          console.warn(`Failed to summarize: ${article.title}`, error)
+          // Return article with basic info if summarization fails
+          return {
+            id: crypto.randomUUID(),
+            title: article.title,
+            source: article.source,
+            url: article.link,
+            content: article.content || '',
+            summary: article.content?.slice(0, 200) || article.title,
+            keyPoints: [],
+            categories: ['General'],
+            relevanceScore: 0.5,
+            autoQuestions: [],
+            publishedAt: article.pubDate || now,
+            createdAt: now,
+            saved: false
+          }
         }
       })
     )
 
     results.push(...batchResults)
 
+    // Small delay between batches to avoid rate limits
     if (i + 5 < articles.length) {
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await new Promise(resolve => setTimeout(resolve, 300))
     }
   }
 
+  console.log(`Summarization complete: ${results.length} articles`)
   results.sort((a, b) => b.relevanceScore - a.relevanceScore)
   return results
+}
+
+// Quick mode: convert articles without AI summarization
+export function convertArticlesQuick(articles: FetchResult[]): Article[] {
+  console.log(`Quick converting ${articles.length} articles (no AI)`)
+  const now = new Date().toISOString()
+
+  return articles.map(article => ({
+    id: crypto.randomUUID(),
+    title: article.title,
+    source: article.source,
+    url: article.link,
+    content: article.content || '',
+    summary: article.content?.slice(0, 200) || article.title,
+    keyPoints: [],
+    categories: ['General'],
+    relevanceScore: 0.5,
+    autoQuestions: [],
+    publishedAt: article.pubDate || now,
+    createdAt: now,
+    saved: false
+  }))
 }
 
 // Chat with context from articles AND memory, with real-time web search

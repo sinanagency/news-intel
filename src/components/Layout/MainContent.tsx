@@ -68,6 +68,14 @@ export function MainContent({ onAskAbout: _onAskAbout, onRefresh, onReadMore }: 
               {sortedArticles.length} articles personalized for you
             </p>
           </div>
+          <button
+            onClick={onRefresh}
+            disabled={isFetching}
+            className="hero-refresh-btn"
+          >
+            <RefreshCw className={`w-5 h-5 ${isFetching ? 'animate-spin' : ''}`} />
+            {isFetching ? 'Fetching...' : 'Refresh'}
+          </button>
         </div>
 
         {/* Featured / Top Picks */}

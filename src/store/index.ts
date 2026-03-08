@@ -66,20 +66,35 @@ export const useStore = create<AppState>()(
         groqApiKey: 'USE_BACKEND',
         openaiApiKey: 'USE_BACKEND',
         interests: [
+          // AI & LLMs (top priority)
           'AI',
+          'LLM',
+          'GPT',
           'Claude',
           'Anthropic',
           'OpenAI',
+          'Gemini',
+          'machine learning',
+          // GPUs & Hardware
+          'GPU',
+          'NVIDIA',
+          'CUDA',
+          'semiconductor',
+          // Crypto
+          'crypto',
+          'bitcoin',
+          'ethereum',
+          'blockchain',
+          'DeFi',
+          // Tech
           'startups',
           'SaaS',
-          'indie hacking',
-          'digital agencies',
           'fintech',
-          'African tech'
+          'tech'
         ],
-        ignoredKeywords: ['NFT', 'cryptocurrency', 'gaming', 'sports'],
+        ignoredKeywords: ['gaming', 'sports', 'celebrity', 'entertainment'],
         fetchIntervalHours: 4,
-        maxArticlesPerFetch: 50,
+        maxArticlesPerFetch: 100,
         enableSemanticSearch: true,
         enableDeepAnalysis: true
       },

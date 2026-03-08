@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { Bookmark, BookmarkCheck, MessageSquare, ExternalLink, Clock, Loader2, ArrowLeft } from 'lucide-react'
+import { Bookmark, BookmarkCheck, MessageSquare, ExternalLink, Clock, Loader2, X } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Article } from '../types'
 import { useStore } from '../store'
@@ -75,172 +75,126 @@ export function ArticleReader({ article, onClose, onAskAbout }: ArticleReaderPro
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Reader Panel */}
-      <div className="relative ml-auto w-full max-w-3xl h-full bg-[--gray-1] border-l border-[--border-subtle] overflow-hidden animate-slide-up flex flex-col">
+    <div className="article-modal-overlay" onClick={onClose}>
+      {/* Centered Modal */}
+      <div className="article-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <header className="sticky top-0 z-10 glass border-b border-[--border-subtle] px-6 py-3">
-          <div className="flex items-center justify-between">
+        <header className="article-modal-header">
+          <div className="article-modal-meta">
+            <span className="badge">{article.source}</span>
+            <span className="article-modal-time">
+              <Clock className="w-3.5 h-3.5" />
+              {formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true })}
+            </span>
+            {fullArticle && (
+              <span className="article-modal-read-time">
+                {fullArticle.readTimeMinutes} min read
+              </span>
+            )}
+          </div>
+
+          <div className="article-modal-actions">
             <button
-              onClick={onClose}
-              className="flex items-center gap-2 text-[13px] font-medium text-[--gray-9] hover:text-[--gray-12] transition-colors"
+              onClick={toggleSaved}
+              className={`article-action-btn ${article.saved ? 'active' : ''}`}
             >
-              <ArrowLeft className="w-4 h-4" />
-              Back
+              {article.saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+              {article.saved ? 'Saved' : 'Save'}
             </button>
 
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleSaved}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-md transition-colors ${
-                  article.saved
-                    ? 'text-[--accent] bg-[--accent-muted]'
-                    : 'text-[--gray-9] hover:text-[--gray-12] hover:bg-[--gray-4]'
-                }`}
-              >
-                {article.saved ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
-                {article.saved ? 'Saved' : 'Save'}
-              </button>
+            <button onClick={handleAskAI} className="article-action-btn">
+              <MessageSquare className="w-4 h-4" />
+              Ask AI
+            </button>
 
-              <button
-                onClick={handleAskAI}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-[--gray-9] hover:text-[--gray-12] hover:bg-[--gray-4] rounded-md transition-colors"
-              >
-                <MessageSquare className="w-3.5 h-3.5" />
-                Ask AI
-              </button>
+            <a
+              href={article.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="article-action-btn primary"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Original
+            </a>
 
-              <a
-                href={article.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary h-8 px-3 text-[12px]"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Original
-              </a>
-            </div>
+            <button onClick={onClose} className="article-close-btn">
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </header>
 
         {/* Content */}
-        <div ref={contentRef} className="flex-1 overflow-y-auto">
-          <div className="max-w-2xl mx-auto px-6 py-8">
-            {/* Meta */}
-            <div className="flex items-center gap-2 mb-4">
-              <span className="badge">
-                {article.source}
-              </span>
-              <span className="flex items-center gap-1.5 text-[12px] text-[--gray-8]">
-                <Clock className="w-3.5 h-3.5" />
-                {formatDistanceToNow(new Date(article.publishedAt), { addSuffix: true })}
-              </span>
-              {fullArticle && (
-                <span className="text-[12px] text-[--gray-8]">
-                  · {fullArticle.readTimeMinutes} min read
-                </span>
-              )}
-            </div>
+        <div ref={contentRef} className="article-modal-content">
+          {/* Title */}
+          <h1 className="article-modal-title">{article.title}</h1>
 
-            {/* Title */}
-            <h1 className="text-[24px] font-semibold text-[--gray-12] leading-tight mb-6">
-              {article.title}
-            </h1>
+          {/* AI Summary Box */}
+          <div className="article-summary-box">
+            <p className="article-summary-label">AI Summary</p>
+            <p className="article-summary-text">{article.summary}</p>
 
-            {/* AI Summary Box */}
-            <div className="card p-5 mb-6">
-              <p className="text-[11px] font-semibold text-[--gray-9] uppercase tracking-wide mb-2">AI Summary</p>
-              <p className="text-[14px] text-[--gray-11] leading-relaxed mb-4">
-                {article.summary}
-              </p>
-
-              {/* Key Points */}
-              {article.keyPoints.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-[--border-subtle]">
-                  <p className="text-[11px] font-semibold text-[--gray-9] uppercase tracking-wide mb-2">Key Points</p>
-                  <ul className="space-y-2">
-                    {article.keyPoints.map((point, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] text-[--gray-10]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[--gray-7] mt-2 shrink-0" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Categories */}
-            <div className="flex flex-wrap gap-1.5 mb-6">
-              {article.categories.map((cat, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-[--gray-4] text-[--gray-9] rounded"
-                >
-                  {cat}
-                </span>
-              ))}
-            </div>
-
-            {/* Full Article Content */}
-            <div className="mb-8">
-              <h2 className="text-[15px] font-semibold text-[--gray-12] mb-4">Full Article</h2>
-
-              {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 text-[--gray-8] animate-spin mb-3" />
-                  <p className="text-[13px] text-[--gray-8]">Loading article content...</p>
-                </div>
-              ) : fullArticle ? (
-                <div className="prose prose-invert prose-sm max-w-none">
-                  {fullArticle.content.split('\n\n').map((paragraph, i) => (
-                    <p key={i} className="text-[14px] text-[--gray-10] leading-relaxed mb-4">
-                      {paragraph}
-                    </p>
+            {/* Key Points */}
+            {article.keyPoints.length > 0 && (
+              <div className="article-key-points">
+                <p className="article-summary-label">Key Points</p>
+                <ul>
+                  {article.keyPoints.map((point, i) => (
+                    <li key={i}>
+                      <span className="bullet" />
+                      <span>{point}</span>
+                    </li>
                   ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-[13px] text-[--gray-8] mb-4">
-                    Could not load full article content.
-                  </p>
-                  <a
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-primary"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Read on {article.source}
-                  </a>
-                </div>
-              )}
-            </div>
-
-            {/* Suggested Questions */}
-            {article.autoQuestions.length > 0 && (
-              <div className="mb-8">
-                <h3 className="text-[13px] font-semibold text-[--gray-12] mb-3">Questions to Explore</h3>
-                <div className="space-y-2">
-                  {article.autoQuestions.map((q, i) => (
-                    <button
-                      key={i}
-                      onClick={handleAskAI}
-                      className="w-full text-left px-4 py-3 card card-interactive text-[13px] text-[--gray-10] hover:text-[--gray-12] transition-colors"
-                    >
-                      {q}
-                    </button>
-                  ))}
-                </div>
+                </ul>
               </div>
             )}
           </div>
+
+          {/* Categories */}
+          <div className="article-categories">
+            {article.categories.map((cat, i) => (
+              <span key={i} className="article-category">{cat}</span>
+            ))}
+          </div>
+
+          {/* Full Article Content */}
+          <div className="article-full-content">
+            <h2>Full Article</h2>
+
+            {isLoading ? (
+              <div className="article-loading">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <p>Loading article content...</p>
+              </div>
+            ) : fullArticle ? (
+              <div className="article-prose">
+                {fullArticle.content.split('\n\n').map((paragraph, i) => (
+                  <p key={i}>{paragraph}</p>
+                ))}
+              </div>
+            ) : (
+              <div className="article-fallback">
+                <p>Could not load full article content.</p>
+                <a href={article.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                  <ExternalLink className="w-4 h-4" />
+                  Read on {article.source}
+                </a>
+              </div>
+            )}
+          </div>
+
+          {/* Suggested Questions */}
+          {article.autoQuestions.length > 0 && (
+            <div className="article-questions">
+              <h3>Questions to Explore</h3>
+              <div className="article-questions-list">
+                {article.autoQuestions.map((q, i) => (
+                  <button key={i} onClick={handleAskAI} className="article-question">
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

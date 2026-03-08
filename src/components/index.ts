@@ -5,6 +5,7 @@ export { SettingsPanel } from './SettingsPanel'
 export { AnalyticsPanel } from './AnalyticsPanel'
 export { DailyBriefing } from './DailyBriefing'
 export { VoiceButton } from './VoiceButton'
+export { Dock } from './Dock'
 
 // Legacy exports (can be removed if unused)
 export { Header } from './Header'

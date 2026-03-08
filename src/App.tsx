@@ -1,9 +1,9 @@
 import { useEffect, useCallback, useState } from 'react'
-import { IconRail, CategorySidebar, RightPanel, MainContent } from './components/Layout'
-import { ArticleReader, ChatPanel, SettingsPanel, AnalyticsPanel, DailyBriefing } from './components'
+import { MainContent } from './components/Layout'
+import { ArticleReader, ChatPanel, SettingsPanel, AnalyticsPanel, DailyBriefing, Dock } from './components'
 import { useStore } from './store'
 import { fetchAllNews, filterByInterests } from './services/newsFetcher'
-import { summarizeArticles, chatWithContext } from './services/groq'
+import { summarizeArticles, convertArticlesQuick, chatWithContext } from './services/groq'
 import { behaviorAgent } from './services/behaviorAgent'
 import { memoryAgent } from './services/memoryAgent'
 import { openaiService } from './services/openai'
@@ -41,18 +41,21 @@ function App() {
 
   // Fetch and process news
   const handleRefresh = useCallback(async () => {
-    if (!settings.groqApiKey && settings.groqApiKey !== 'USE_BACKEND') {
-      alert('Please set your Groq API key in Settings first.')
-      setActiveTab('settings')
-      return
-    }
-
     setIsFetching(true)
 
     try {
+      // Step 1: Fetch raw news
+      console.log('Step 1: Fetching news...')
       const rawNews = await fetchAllNews()
-      console.log(`Fetched ${rawNews.length} articles`)
+      console.log(`Fetched ${rawNews.length} raw articles`)
 
+      if (rawNews.length === 0) {
+        alert('Could not fetch any news. Check your internet connection.')
+        return
+      }
+
+      // Step 2: Filter by interests
+      console.log('Step 2: Filtering...')
       const filtered = filterByInterests(
         rawNews,
         settings.interests,
@@ -62,23 +65,31 @@ function App() {
 
       const limited = filtered.slice(0, settings.maxArticlesPerFetch)
 
-      const processed = await summarizeArticles(
-        limited,
-        settings.groqApiKey,
-        settings.interests
-      )
+      // Step 3: Try AI summarization, fallback to quick mode
+      let processed
+      try {
+        console.log('Step 3: AI Summarization...')
+        processed = await summarizeArticles(
+          limited,
+          settings.groqApiKey,
+          settings.interests
+        )
+      } catch (summaryError) {
+        console.warn('AI summarization failed, using quick mode:', summaryError)
+        processed = convertArticlesQuick(limited)
+      }
 
       addArticles(processed)
       setLastFetchTime(new Date().toISOString())
 
-      console.log(`Added ${processed.length} processed articles`)
+      console.log(`Success! Added ${processed.length} articles`)
     } catch (error) {
       console.error('Failed to fetch news:', error)
       alert(`Failed to fetch news: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsFetching(false)
     }
-  }, [settings, addArticles, setIsFetching, setLastFetchTime, setActiveTab])
+  }, [settings, addArticles, setIsFetching, setLastFetchTime])
 
   // Handle "Ask about this" from article card
   const handleAskAbout = useCallback(async (article: Article) => {
@@ -150,16 +161,17 @@ function App() {
 
   return (
     <div className="app-layout">
-      {/* Left: Icon Rail */}
-      <IconRail />
+      {/* Ambient Background */}
+      <div className="ambient-bg">
+        <div className="ambient-orb ambient-orb-1" />
+        <div className="ambient-orb ambient-orb-2" />
+        <div className="ambient-orb ambient-orb-3" />
+        <div className="ambient-orb ambient-orb-4" />
+        <div className="ambient-orb ambient-orb-5" />
+        <div className="ambient-orb ambient-orb-6" />
+      </div>
 
-      {/* Left: Category Sidebar */}
-      <CategorySidebar
-        onRefresh={handleRefresh}
-        onOpenBriefing={() => setShowBriefing(true)}
-      />
-
-      {/* Center: Main Content */}
+      {/* Main Content */}
       {(activeTab === 'today' || activeTab === 'saved') && (
         <MainContent
           onAskAbout={handleAskAbout}
@@ -189,9 +201,6 @@ function App() {
         </div>
       )}
 
-      {/* Right: Side Panel */}
-      <RightPanel />
-
       {/* Article Reader Panel */}
       <ArticleReader
         article={selectedArticle}
@@ -203,6 +212,9 @@ function App() {
       {showBriefing && (
         <DailyBriefing onClose={() => setShowBriefing(false)} />
       )}
+
+      {/* Mac-style Dock */}
+      <Dock />
     </div>
   )
 }

@@ -1,6 +1,6 @@
-import { Home, Cpu, Rocket, Building2, Globe2, TrendingUp, Headphones, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
+import { Home, Bookmark, Search, RefreshCw, Headphones } from 'lucide-react'
 import { useStore } from '../../store'
-import { AskBar } from '../AskBar'
 
 interface CategorySidebarProps {
   onRefresh: () => void
@@ -8,57 +8,59 @@ interface CategorySidebarProps {
 }
 
 export function CategorySidebar({ onRefresh, onOpenBriefing }: CategorySidebarProps) {
-  const { activeTab, setActiveTab, articles, isFetching, settings } = useStore()
+  const { activeTab, setActiveTab, articles, isFetching } = useStore()
+  const [searchQuery, setSearchQuery] = useState('')
 
   const feedCount = articles.filter(a => !a.saved).length
+  const savedCount = articles.filter(a => a.saved).length
 
   return (
     <div className="category-sidebar">
-      {/* Ask Bar - Master input */}
-      <AskBar />
+      {/* Search */}
+      <div className="sidebar-header">
+        <div className="sidebar-search-wrap">
+          <Search className="sidebar-search-icon" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search articles..."
+            className="sidebar-search"
+          />
+        </div>
+      </div>
 
       {/* Navigation */}
       <nav className="sidebar-nav">
-        {/* Main Navigation */}
+        {/* Main */}
         <div className="nav-section">
           <div
             className={`nav-item ${activeTab === 'today' ? 'active' : ''}`}
             onClick={() => setActiveTab('today')}
           >
             <Home className="nav-icon" />
-            <span>Home</span>
+            <span>Feed</span>
             {feedCount > 0 && <span className="nav-badge">{feedCount}</span>}
+          </div>
+          <div
+            className={`nav-item ${activeTab === 'saved' ? 'active' : ''}`}
+            onClick={() => setActiveTab('saved')}
+          >
+            <Bookmark className="nav-icon" />
+            <span>Saved</span>
+            {savedCount > 0 && <span className="nav-badge">{savedCount}</span>}
           </div>
         </div>
 
-        {/* Categories */}
+        {/* Quick Actions */}
         <div className="nav-section">
-          <div className="nav-section-title">Categories</div>
-          {settings.interests.slice(0, 6).map((interest, i) => {
-            const icons = [Cpu, Rocket, Building2, Globe2, TrendingUp, Cpu]
-            const Icon = icons[i % icons.length]
-            return (
-              <div
-                key={interest}
-                className="nav-item"
-                onClick={() => setActiveTab('today')}
-              >
-                <Icon className="nav-icon" />
-                <span>{interest}</span>
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Actions */}
-        <div className="nav-section">
-          <div className="nav-section-title">Quick Actions</div>
+          <div className="nav-section-title">Actions</div>
           <div
             className="nav-item"
             onClick={onRefresh}
           >
             <RefreshCw className={`nav-icon ${isFetching ? 'animate-spin' : ''}`} />
-            <span>{isFetching ? 'Fetching...' : 'Refresh Feed'}</span>
+            <span>{isFetching ? 'Fetching...' : 'Refresh'}</span>
           </div>
           {onOpenBriefing && articles.length > 0 && (
             <div
@@ -66,7 +68,7 @@ export function CategorySidebar({ onRefresh, onOpenBriefing }: CategorySidebarPr
               onClick={onOpenBriefing}
             >
               <Headphones className="nav-icon" />
-              <span>Daily Briefing</span>
+              <span>Briefing</span>
             </div>
           )}
         </div>
